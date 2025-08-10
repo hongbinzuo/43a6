@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dow Theory Bullish Pattern Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(59, 130, 246, 0.5); }
+            50% { border-color: rgba(59, 130, 246, 1); }
+        }
+        .scanning-border {
+            animation: pulse-border 2s ease-in-out infinite;
+        }
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-up {
+            animation: slide-up 0.5s ease-out;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2">
+                        <i class="fas fa-chart-line mr-3"></i>
+                        Dow Theory Scanner
+                    </h1>
+                    <p class="text-purple-100">Scan Gate.io USDT pairs for bullish patterns with 2+ Higher Highs & Higher Lows</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-purple-100">Powered by</div>
+                    <div class="text-xl font-semibold">Gate.io API</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Control Panel -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex-1">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-2">
+                        <i class="fas fa-cogs text-purple-600 mr-2"></i>
+                        Scanner Control Panel
+                    </h2>
+                    <p class="text-gray-600">Click the button to start scanning cryptocurrency pairs for bullish Dow Theory patterns</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="startBtn" onclick="startScan()" 
+                            class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-play mr-2"></i>
+                        Start Scan
+                    </button>
+                    <button id="stopBtn" onclick="stopScan()" 
+                            class="bg-gradient-to-r from-red-500 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-red-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl hidden">
+                        <i class="fas fa-stop mr-2"></i>
+                        Stop Scan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progressSection" class="mt-6 hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-3"></div>
+                        <span class="text-gray-700 font-medium">Scanning: <span id="currentSymbol" class="text-purple-600 font-bold">-</span></span>
+                    </div>
+                    <span class="text-gray-600">
+                        <span id="progressText" class="font-semibold">0</span> / <span id="totalText" class="font-semibold">0</span> symbols
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div id="progressBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div id="statsSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Total Scanned</p>
+                        <p id="totalScanned" class="text-3xl font-bold text-gray-800 mt-1">0</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <i class="fas fa-search text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Bullish Patterns</p>
+                        <p id="bullishCount" class="text-3xl font-bold text-green-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Best Performer</p>
+                        <p id="bestPerformer" class="text-xl font-bold text-purple-600 mt-1">-</p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <i class="fas fa-trophy text-purple-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    Bullish Patterns Found
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Rank</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Symbol</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Start Date</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Start Low</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Higher Highs</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Higher Lows</th>
+                                <th class="text-right py-3 px-4 font-semibold text-gray-700">Rise %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <!-- Results will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noResults" class="text-center py-12 hidden">
+                    <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                    <p class="text-gray-500 text-lg">No bullish patterns found yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div id="errorAlert" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                <div>
+                    <p class="text-red-700 font-semibold">Error</p>
+                    <p id="errorMessage" class="text-red-600"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12 py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-300">
+                <i class="fas fa-code mr-2"></i>
+                Dow Theory Pattern Scanner - Identifying Bullish Trends
+            </p>
+            <p class="text-gray-400 text-sm mt-2">
+                Scans cryptocurrency pairs for patterns with 2+ Higher Highs and 2+ Higher Lows
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        let scanInterval;
+        
+        async function startScan() {
+            // Reset UI
+            document.getElementById('errorAlert').classList.add('hidden');
+            document.getElementById('startBtn').classList.add('hidden');
+            document.getElementById('stopBtn').classList.remove('hidden');
+            document.getElementById('progressSection').classList.remove('hidden');
+            document.getElementById('statsSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('resultsTableBody').innerHTML = '';
+            document.getElementById('noResults').classList.add('hidden');
+            
+            // Start the scan
+            try {
+                const response = await fetch('/start_scan', { method: 'POST' });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Start polling for status
+                    scanInterval = setInterval(updateStatus, 1000);
+                } else {
+                    showError(data.error || 'Failed to start scan');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function stopScan() {
+            clearInterval(scanInterval);
+            
+            try {
+                await fetch('/stop_scan', { method: 'POST' });
+            } catch (error) {
+                console.error('Error stopping scan:', error);
+            }
+            
+            document.getElementById('startBtn').classList.remove('hidden');
+            document.getElementById('stopBtn').classList.add('hidden');
+            document.getElementById('progressSection').classList.add('hidden');
+        }
+        
+        async function updateStatus() {
+            try {
+                const response = await fetch('/scan_status');
+                const status = await response.json();
+                
+                // Update progress
+                if (status.total > 0) {
+                    const percentage = (status.progress / status.total) * 100;
+                    document.getElementById('progressBar').style.width = percentage + '%';
+                    document.getElementById('progressText').textContent = status.progress;
+                    document.getElementById('totalText').textContent = status.total;
+                    document.getElementById('currentSymbol').textContent = status.current_symbol || '-';
+                    document.getElementById('totalScanned').textContent = status.progress;
+                }
+                
+                // Update results
+                if (status.results && status.results.length > 0) {
+                    updateResults(status.results);
+                    document.getElementById('bullishCount').textContent = status.results.length;
+                    document.getElementById('bestPerformer').textContent = 
+                        status.results[0].symbol + ' (+' + status.results[0].rise_pct + '%)';
+                } else {
+                    document.getElementById('noResults').classList.remove('hidden');
+                }
+                
+                // Check if scan is complete
+                if (!status.is_scanning && status.progress > 0) {
+                    clearInterval(scanInterval);
+                    document.getElementById('startBtn').classList.remove('hidden');
+                    document.getElementById('stopBtn').classList.add('hidden');
+                    document.getElementById('currentSymbol').textContent = 'Complete!';
+                    
+                    // Show completion message
+                    if (status.progress === status.total) {
+                        document.getElementById('progressSection').innerHTML += 
+                            '<div class="mt-4 text-center text-green-600 font-semibold slide-up"><i class="fas fa-check-circle mr-2"></i>Scan completed successfully!</div>';
+                    }
+                }
+                
+                // Check for errors
+                if (status.error) {
+                    showError(status.error);
+                    stopScan();
+                }
+                
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+        
+        function updateResults(results) {
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+            
+            results.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50 transition-colors slide-up';
+                
+                const getRiseColor = (rise) => {
+                    if (rise >= 100) return 'text-purple-600 font-bold';
+                    if (rise >= 50) return 'text-green-600 font-semibold';
+                    if (rise >= 20) return 'text-green-500';
+                    return 'text-gray-700';
+                };
+                
+                row.innerHTML = `
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${index < 3 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold' : 'bg-gray-200 text-gray-700'}">
+                            ${index + 1}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-gray-800">${result.symbol}</td>
+                    <td class="py-3 px-4 text-gray-600">${result.start_date}</td>
+                    <td class="py-3 px-4 text-gray-600">${formatPrice(result.start_low)}</td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm">
+                            <span class="text-gray-500">H1:</span> ${formatPrice(result.high1)}<br>
+                            <span class="text-gray-500">H2:</span> ${formatPrice(result.high2)}
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm">
+                            <span class="text-gray-500">L1:</span> ${formatPrice(result.low1)}<br>
+                            <span class="text-gray-500">L2:</span> ${formatPrice(result.low2)}
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <span class="${getRiseColor(result.rise_pct)}">
+                            <i class="fas fa-arrow-up mr-1"></i>
+                            ${result.rise_pct}%
+                        </span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('noResults').classList.add('hidden');
+        }
+        
+        function formatPrice(price) {
+            if (price >= 1) return price.toFixed(2);
+            if (price >= 0.01) return price.toFixed(4);
+            if (price >= 0.0001) return price.toFixed(6);
+            return price.toExponential(2);
+        }
+        
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
